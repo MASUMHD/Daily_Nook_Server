@@ -27,17 +27,36 @@ async function run() {
 
     // Collections
     const productsCollection = client.db("Daily_Nook").collection("products");
+    const usersCollection = client.db("Daily_Nook").collection("users");
     
 
+    // add users
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      const query = { email: user.email };
+      const existingUser = await usersCollection.findOne(query);
+      if (existingUser) {
+        return res.send({ message: "User already exists" });
+      }
+      const result = await usersCollection.insertOne(user);
+      res.send(result);
+    })
 
+    // show users
+    app.get("/users", async (req, res) => {
+      const result = await usersCollection.find().toArray();
+      res.send(result);
+    })
 
 
     // Add Product
     app.post("/products", async (req, res) => {
       const product = req.body;
+      console.log(product);
       const result = await productsCollection.insertOne(product);
       res.send(result);
     });
+    
 
     // Get All Products
     app.get("/products", async (req, res) => {
