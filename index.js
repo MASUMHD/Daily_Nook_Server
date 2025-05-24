@@ -28,7 +28,11 @@ async function run() {
     // Collections
     const productsCollection = client.db("Daily_Nook").collection("products");
     const usersCollection = client.db("Daily_Nook").collection("users");
-    
+    const cartCollection = client.db("Daily_Nook").collection("cart");
+
+
+
+
 
     // add users
     app.post("/users", async (req, res) => {
@@ -40,14 +44,13 @@ async function run() {
       }
       const result = await usersCollection.insertOne(user);
       res.send(result);
-    })
+    });
 
     // show users
     app.get("/users", async (req, res) => {
       const result = await usersCollection.find().toArray();
       res.send(result);
-    })
-
+    });
 
     // Add Product
     app.post("/products", async (req, res) => {
@@ -56,7 +59,6 @@ async function run() {
       const result = await productsCollection.insertOne(product);
       res.send(result);
     });
-    
 
     // Get All Products
     app.get("/products", async (req, res) => {
@@ -64,7 +66,21 @@ async function run() {
       res.send(result);
     });
 
+    // Add product to cart
+    app.post("/cart", async (req, res) => {
+      const cartItem = req.body; 
+      const result = await cartCollection.insertOne(cartItem);
+      res.send(result);
+    });
 
+    // Get cart items by user email
+    app.get("/cart", async (req, res) => {
+      const email = req.query.email;
+      if (!email) return res.status(400).send({ message: "Email is required" });
+
+      const result = await cartCollection.find({ email }).toArray();
+      res.send(result);
+    });
 
 
 
@@ -82,7 +98,6 @@ async function run() {
     app.listen(port, () => {
       console.log(`🚀 Daily Nook Server is running on port ${port}`);
     });
-
   } catch (error) {
     console.log("❌ Error:", error.name, error.message);
   }
