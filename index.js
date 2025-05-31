@@ -1,12 +1,18 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 5000;
 
 // middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // MongoDB URI
@@ -29,10 +35,6 @@ async function run() {
     const productsCollection = client.db("Daily_Nook").collection("products");
     const usersCollection = client.db("Daily_Nook").collection("users");
     const cartCollection = client.db("Daily_Nook").collection("cart");
-
-
-
-
 
     // add users
     app.post("/users", async (req, res) => {
@@ -66,28 +68,29 @@ async function run() {
       res.send(result);
     });
 
-    // Add product to cart
+    // Add to cart
     app.post("/cart", async (req, res) => {
-      const cartItem = req.body; 
-      const result = await cartCollection.insertOne(cartItem);
+      const item = req.body;
+      const result = await cartCollection.insertOne(item);
       res.send(result);
     });
 
-    // Get cart items by user email
+    // Get show cart items
     app.get("/cart", async (req, res) => {
-      const email = req.query.email;
-      if (!email) return res.status(400).send({ message: "Email is required" });
-
-      const result = await cartCollection.find({ email }).toArray();
+      const result = await cartCollection.find().toArray();
       res.send(result);
     });
 
+    // Delete cart item
 
+    app.delete("/cart/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await cartCollection.deleteOne(query);
+      res.send(result);
+    });
 
-
-
-
-
+    
 
     // Default route
     app.get("/", (req, res) => {
