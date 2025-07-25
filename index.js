@@ -70,27 +70,44 @@ async function run() {
 
     // Add to cart
     app.post("/cart", async (req, res) => {
-      const item = req.body;
-      const result = await cartCollection.insertOne(item);
+      const { productId, email } = req.body;
+
+      const existingUserQuery = await cartCollection.find({ email }).toArray();
+
+      const existingItem = existingUserQuery.find(
+        (cartItem) => cartItem.productId === productId
+      );
+
+      if (existingItem) {
+        return res.status(400).send({ message: "Product already in cart" });
+      }
+
+      const result = await cartCollection.insertOne({ productId, email });
       res.send(result);
     });
 
     // Get show cart items
     app.get("/cart", async (req, res) => {
-      const result = await cartCollection.find().toArray();
-      res.send(result);
+      const email = req.query.email;
+      if (!email)
+        return res.send({ message: "Email query parameter is required" });
+
+      const userCartQuery = await cartCollection.find({ email }).toArray();
+      const productIds = userCartQuery.map((item) => item.productId);
+      const products = await productsCollection
+        .find({ _id: { $in: productIds.map((id) => new ObjectId(id)) } })
+        .toArray();
+
+      res.send(products);
     });
 
     // Delete cart item
-
     app.delete("/cart/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await cartCollection.deleteOne(query);
       res.send(result);
     });
-
-    
 
     // Default route
     app.get("/", (req, res) => {
