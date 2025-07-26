@@ -86,40 +86,55 @@ async function run() {
       res.send(result);
     });
 
+
     // Get show cart items
     app.get("/cart", async (req, res) => {
       const email = req.query.email;
       if (!email)
         return res.send({ message: "Email query parameter is required" });
 
-      const userCartQuery = await cartCollection.find({ email }).toArray();
-      const productIds = userCartQuery.map((item) => item.productId);
+      const cartItems = await cartCollection.find({ email }).toArray();
+
+      const productIds = cartItems.map((item) => new ObjectId(item.productId));
       const products = await productsCollection
-        .find({ _id: { $in: productIds.map((id) => new ObjectId(id)) } })
+        .find({ _id: { $in: productIds } })
         .toArray();
 
-      res.send(products);
+      const merged = cartItems.map((cartItem) => {
+        const product = products.find(
+          (p) => p._id.toString() === cartItem.productId
+        );
+        return {
+          ...product,
+          cartItemId: cartItem._id, 
+        };
+      });
+
+      res.send(merged);
     });
+
 
     // Delete cart item
     app.delete("/cart/:id", async (req, res) => {
       const id = req.params.id;
-      const query = { _id: new ObjectId(id) };
-      const result = await cartCollection.deleteOne(query);
+      const result = await cartCollection.deleteOne({ _id: new ObjectId(id) });
+      if (result.deletedCount === 0) {
+        return res.status(404).send({ message: "Item not found" });
+      }
       res.send(result);
     });
 
     // Default route
     app.get("/", (req, res) => {
-      res.send("Daily Nook Server is running");
+      res.send("Daily Nook Server is running...");
     });
 
     // Start server after DB is ready
     app.listen(port, () => {
-      console.log(`🚀 Daily Nook Server is running on port ${port}`);
+      console.log(`Daily Nook Server is running on port ${port}`);
     });
   } catch (error) {
-    console.log("❌ Error:", error.name, error.message);
+    console.log("Error:", error.name, error.message);
   }
 }
 
