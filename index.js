@@ -54,6 +54,37 @@ async function run() {
       res.send(result);
     });
 
+    // Update user
+    app.put("/users/:id", async (req, res) => {
+      const id = req.params.id;
+      const { username, email, role } = req.body;
+      try {
+        const result = await usersCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { username, email, role } }
+        );
+        res.send(result);
+      } catch (err) {
+        res.status(500).send({ message: err.message });
+      }
+    });
+
+    // Delete user
+    app.delete("/users/:id", async (req, res) => {
+      const id = req.params.id;
+      try {
+        const result = await usersCollection.deleteOne({
+          _id: new ObjectId(id),
+        });
+        if (result.deletedCount === 0) {
+          return res.status(404).send({ message: "User not found" });
+        }
+        res.send({ message: "User deleted successfully" });
+      } catch (error) {
+        res.status(500).send({ message: error.message });
+      }
+    });
+
     // Add Product
     app.post("/products", async (req, res) => {
       const product = req.body;
@@ -65,6 +96,26 @@ async function run() {
     // Get All Products
     app.get("/products", async (req, res) => {
       const result = await productsCollection.find().toArray();
+      res.send(result);
+    });
+
+    // Update product
+    app.put("/products/:id", async (req, res) => {
+      const id = req.params.id;
+      const updatedProduct = req.body;
+      const result = await productsCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: updatedProduct }
+      );
+      res.send(result);
+    });
+
+    // Delete product
+    app.delete("/products/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await productsCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
       res.send(result);
     });
 
@@ -86,7 +137,6 @@ async function run() {
       res.send(result);
     });
 
-
     // Get show cart items
     app.get("/cart", async (req, res) => {
       const email = req.query.email;
@@ -106,13 +156,12 @@ async function run() {
         );
         return {
           ...product,
-          cartItemId: cartItem._id, 
+          cartItemId: cartItem._id,
         };
       });
 
       res.send(merged);
     });
-
 
     // Delete cart item
     app.delete("/cart/:id", async (req, res) => {
